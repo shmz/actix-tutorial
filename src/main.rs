@@ -2,7 +2,7 @@
 extern crate diesel;
 
 use crate::schema::memos;
-use actix_web::{get, error, web, App, Error, HttpResponse, HttpServer};
+use actix_web::{get, post, error, web, App, Error, HttpResponse, HttpServer};
 use diesel::{
     prelude::*,
     r2d2::{self, ConnectionManager},
@@ -93,6 +93,28 @@ async fn memo_form(
     Ok(HttpResponse::Ok().content_type("text/html").body(view))
 }
 
+#[post("/search")]
+async fn search(
+    pool: web::Data<r2d2::Pool<ConnectionManager<SqliteConnection>>>,
+    params: web::Form<FormParams>,
+    tmpl: web::Data<Tera>,
+) -> Result<HttpResponse, Error> {
+    let mut ctx = Context::new();
+    let conn = pool.get().expect("couldn't get db connection from pool");
+
+    let pattern = format!("%{}%", String::from(&params.content));
+    let memos = memos::table
+        .filter(memos::content.like(pattern))
+        .load::<crate::models::Memo>(&conn)
+        .expect("Error loading cards");
+    
+    ctx.insert("memos", &memos);
+    let view = tmpl
+        .render("form.html", &ctx)
+        .map_err(|e| error::ErrorInternalServerError(e))?;
+    Ok(HttpResponse::Ok().content_type("text/html").body(view))
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let templates = Tera::new("templates/**/*").unwrap();
@@ -109,6 +131,7 @@ async fn main() -> std::io::Result<()> {
             .route("/form", web::get().to(form))
             .route("/form/memo", web::post().to(memo_form))
             .service(form_one)
+            .service(search)
     })
     .bind("127.0.0.1:8080")?
     .run()
