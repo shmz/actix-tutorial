@@ -28,6 +28,7 @@
             <thead>
                 <tr>
                     <th scope="col">id</th>
+                    <th scope="col">created_at</th>
                     <th scope="col">content</th>
                 </tr>
             </thead>
@@ -35,6 +36,7 @@
                 {% for memo in memos %}
                 <tr>
                     <th scope="row">{{ memo.id }}</th>
+                    <td>{{ memo.created_at }}</td>
                     <td>{{ memo.content }}</td>
                 </tr>
                 {% endfor %}

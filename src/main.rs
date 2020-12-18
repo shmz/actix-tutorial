@@ -11,6 +11,7 @@ use diesel::{
 use serde::{Deserialize, Serialize};
 use std::str;
 use tera::{Context, Tera};
+use chrono::Local;
 
 pub mod models;
 pub mod schema;
@@ -49,6 +50,7 @@ async fn memo_form(
 ) -> Result<HttpResponse, Error> {
     let new_memo = crate::models::NewMemo {
         content: String::from(&params.content),
+        created_at: Local::now().naive_local(),
     };
     let conn = pool.get().expect("couldn't get db connection from pool");
     diesel::insert_into(memos::table)
