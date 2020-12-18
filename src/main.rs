@@ -34,6 +34,8 @@ async fn form(
     let mut ctx = Context::new();
     let conn = pool.get().expect("couldn't get db connection from pool");
     let memos = memos::table
+        .order(memos::created_at.desc())//added
+        .limit(5)
         .load::<crate::models::Memo>(&conn)
         .expect("Error loading cards");
     ctx.insert("memos", &memos);
@@ -59,6 +61,8 @@ async fn memo_form(
         .unwrap();
     let mut ctx = Context::new();
     let memos = memos::table
+        .order(memos::created_at.desc())//added
+        .limit(5)
         .load::<crate::models::Memo>(&conn)
         .expect("Error loading cards");
     ctx.insert("memos", &memos);
