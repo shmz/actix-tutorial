@@ -34,9 +34,8 @@ async fn form(
     let mut ctx = Context::new();
     let conn = pool.get().expect("couldn't get db connection from pool");
 
-    let pattern = format!("{}", 0);
     let memos = memos::table
-        .filter(memos::content.eq(pattern))
+        .filter(memos::del.eq(0))
         .order(memos::created_at.desc())//added
         .limit(5)
         .load::<crate::models::Memo>(&conn)
