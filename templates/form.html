@@ -37,6 +37,7 @@
                     <th scope="col">id</th>
                     <th scope="col">created_at</th>
                     <th scope="col">content</th>
+                    <th scope="col">delete</th>
                 </tr>
             </thead>
             <tbody>
@@ -45,6 +46,7 @@
                     <th scope="row"><a href="/memo/{{ memo.id }}">{{ memo.id }}</a></th>
                     <td>{{ memo.created_at }}</td>
                     <td>{{ memo.content }}</td>
+                    <td><form class="form-horizontal" id="simpleForm" method="POST" action="/delete/{{ memo.id }}"><button type="submit" class="btn btn-primary">Delete</button></form></td>
                 </tr>
                 {% endfor %}
             </tbody>

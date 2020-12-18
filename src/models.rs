@@ -1,4 +1,4 @@
-use super::schema::memos;
+﻿use super::schema::memos;
 use serde::Serialize;
 use chrono::NaiveDateTime;
 
@@ -7,6 +7,7 @@ pub struct Memo {
     pub id: i32,
     pub content: String,
     pub created_at: NaiveDateTime,
+    pub del: i32,
 }
 
 #[derive(Insertable)]
@@ -14,4 +15,5 @@ pub struct Memo {
 pub struct NewMemo {
     pub content: String,
     pub created_at: NaiveDateTime,
+    pub del: i32,
 }

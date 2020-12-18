@@ -501,21 +501,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "card-playroom-server"
-version = "0.0.1"
-dependencies = [
- "actix",
- "actix-cors",
- "actix-web",
- "chrono",
- "diesel",
- "diesel_migrations",
- "libsqlite3-sys",
- "serde",
- "tera",
-]
-
-[[package]]
 name = "cc"
 version = "1.0.65"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1194,6 +1179,21 @@ name = "memchr"
 version = "2.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ee1c47aaa256ecabcaea351eae4a9b01ef39ed810004e298d2511ed284b1525"
+
+[[package]]
+name = "memo-form"
+version = "0.0.1"
+dependencies = [
+ "actix",
+ "actix-cors",
+ "actix-web",
+ "chrono",
+ "diesel",
+ "diesel_migrations",
+ "libsqlite3-sys",
+ "serde",
+ "tera",
+]
 
 [[package]]
 name = "migrations_internals"

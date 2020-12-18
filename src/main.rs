@@ -33,7 +33,10 @@ async fn form(
 ) -> Result<HttpResponse, Error> {
     let mut ctx = Context::new();
     let conn = pool.get().expect("couldn't get db connection from pool");
+
+    let pattern = format!("{}", 0);
     let memos = memos::table
+        .filter(memos::content.eq(pattern))
         .order(memos::created_at.desc())//added
         .limit(5)
         .load::<crate::models::Memo>(&conn)
@@ -55,6 +58,7 @@ async fn form_one(
     let mut ctx = Context::new();
     let conn = pool.get().expect("couldn't get db connection from pool");
     let memos = memos::table
+        .filter(memos::del.eq(0))
         .filter(memos::id.eq(info.0))
         .limit(1)
         .load::<crate::models::Memo>(&conn)
@@ -74,6 +78,7 @@ async fn memo_form(
     let new_memo = crate::models::NewMemo {
         content: String::from(&params.content),
         created_at: Local::now().naive_local(),
+        del: 0,
     };
     let conn = pool.get().expect("couldn't get db connection from pool");
     diesel::insert_into(memos::table)
@@ -82,6 +87,7 @@ async fn memo_form(
         .unwrap();
     let mut ctx = Context::new();
     let memos = memos::table
+        .filter(memos::del.eq(0))
         .order(memos::created_at.desc())//added
         .limit(5)
         .load::<crate::models::Memo>(&conn)
@@ -105,6 +111,37 @@ async fn search(
     let pattern = format!("%{}%", String::from(&params.content));
     let memos = memos::table
         .filter(memos::content.like(pattern))
+        .filter(memos::del.eq(0))
+        .load::<crate::models::Memo>(&conn)
+        .expect("Error loading cards");
+    
+    ctx.insert("memos", &memos);
+    let view = tmpl
+        .render("form.html", &ctx)
+        .map_err(|e| error::ErrorInternalServerError(e))?;
+    Ok(HttpResponse::Ok().content_type("text/html").body(view))
+}
+
+#[post("/delete/{id}")]
+async fn delete(
+    pool: web::Data<r2d2::Pool<ConnectionManager<SqliteConnection>>>,
+    tmpl: web::Data<Tera>,
+    info: web::Path<(i32,)>,
+) -> Result<HttpResponse, Error> {
+    let info = info.into_inner();//info.0,path.into_inner().0
+    let mut ctx = Context::new();
+    let conn = pool.get().expect("couldn't get db connection from pool");
+
+    let target = memos::table.filter(memos::id.eq(info.0));
+    diesel::update(target)
+        .set(memos::del.eq(1))
+        .execute(&conn)
+        .unwrap();
+    
+    let memos = memos::table
+        .filter(memos::del.eq(0))
+        .order(memos::created_at.desc())//added
+        .limit(5)
         .load::<crate::models::Memo>(&conn)
         .expect("Error loading cards");
     
@@ -132,6 +169,7 @@ async fn main() -> std::io::Result<()> {
             .route("/form/memo", web::post().to(memo_form))
             .service(form_one)
             .service(search)
+            .service(delete)
     })
     .bind("127.0.0.1:8080")?
     .run()
