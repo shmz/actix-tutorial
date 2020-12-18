@@ -35,7 +35,7 @@
             <tbody>
                 {% for memo in memos %}
                 <tr>
-                    <th scope="row">{{ memo.id }}</th>
+                    <th scope="row"><a href="/memo/{{ memo.id }}">{{ memo.id }}</a></th>
                     <td>{{ memo.created_at }}</td>
                     <td>{{ memo.content }}</td>
                 </tr>

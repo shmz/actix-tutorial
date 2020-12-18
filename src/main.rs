@@ -1,8 +1,8 @@
-#[macro_use]
+﻿#[macro_use]
 extern crate diesel;
 
 use crate::schema::memos;
-use actix_web::{error, web, App, Error, HttpResponse, HttpServer};
+use actix_web::{get, error, web, App, Error, HttpResponse, HttpServer};
 use diesel::{
     prelude::*,
     r2d2::{self, ConnectionManager},
@@ -36,6 +36,27 @@ async fn form(
     let memos = memos::table
         .order(memos::created_at.desc())//added
         .limit(5)
+        .load::<crate::models::Memo>(&conn)
+        .expect("Error loading cards");
+    ctx.insert("memos", &memos);
+    let view = tmpl
+        .render("form.html", &ctx)
+        .map_err(|e| error::ErrorInternalServerError(e))?;
+    Ok(HttpResponse::Ok().content_type("text/html").body(view))
+}
+
+#[get("/memo/{id}")]
+async fn form_one(
+    pool: web::Data<r2d2::Pool<ConnectionManager<SqliteConnection>>>,
+    tmpl: web::Data<Tera>,
+    info: web::Path<(i32,)>,
+) -> Result<HttpResponse, Error> {
+    let info = info.into_inner();//info.0,path.into_inner().0
+    let mut ctx = Context::new();
+    let conn = pool.get().expect("couldn't get db connection from pool");
+    let memos = memos::table
+        .filter(memos::id.eq(info.0))
+        .limit(1)
         .load::<crate::models::Memo>(&conn)
         .expect("Error loading cards");
     ctx.insert("memos", &memos);
@@ -87,6 +108,7 @@ async fn main() -> std::io::Result<()> {
             .route("/", web::get().to(greet))
             .route("/form", web::get().to(form))
             .route("/form/memo", web::post().to(memo_form))
+            .service(form_one)
     })
     .bind("127.0.0.1:8080")?
     .run()
