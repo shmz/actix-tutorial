@@ -10,6 +10,7 @@ edition = "2018"
 actix = "0.10"
 actix-web = "3"
 actix-files = "0.3"
+actix-session = "0.4"
 actix-cors = "0.5"
 diesel = { version = "1.4.5", features = ["sqlite", "r2d2", "chrono"] }
 libsqlite3-sys = { version = "0.9.1", features = ["bundled"]}

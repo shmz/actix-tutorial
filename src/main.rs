@@ -3,6 +3,7 @@ extern crate diesel;
 
 use crate::schema::memos;
 use actix_files as fs;
+use actix_session::{CookieSession, Session};
 use actix_web::http::StatusCode;
 use actix_web::{get, guard, post, error, web, App, Error, HttpRequest, HttpResponse, HttpServer, middleware, Result};
 use diesel::{
@@ -30,9 +31,20 @@ pub struct FormParams {
 }
 
 async fn form(
+    session: Session,
     pool: web::Data<r2d2::Pool<ConnectionManager<SqliteConnection>>>,
     tmpl: web::Data<Tera>,
 ) -> Result<HttpResponse, Error> {
+    // session
+    let mut counter = 1;
+    if let Some(count) = session.get::<i32>("counter")? {
+        println!("SESSION value: {}", count);
+        counter = count + 1;
+    }
+
+    // set counter to session
+    session.set("counter", counter)?;
+    
     let mut ctx = Context::new();
     let conn = pool.get().expect("couldn't get db connection from pool");
 
@@ -172,6 +184,7 @@ async fn main() -> std::io::Result<()> {
         .expect("failed to create db connection pool");
     HttpServer::new(move || {
         App::new()
+            .wrap(CookieSession::signed(&[0; 32]).secure(false))
             .wrap(middleware::Logger::default())
             .data(templates.clone())
             .data(db_pool.clone())
