@@ -2,14 +2,14 @@
 extern crate diesel;
 
 use crate::schema::memos;
-use actix_web::{get, post, error, web, App, Error, HttpResponse, HttpServer};
+use actix_web::{get, post, error, web, App, Error, HttpRequest, HttpResponse, HttpServer, middleware};
 use diesel::{
     prelude::*,
     r2d2::{self, ConnectionManager},
     sqlite::SqliteConnection,
 };
 use serde::{Deserialize, Serialize};
-use std::str;
+use std::{str, env, io};
 use tera::{Context, Tera};
 use chrono::Local;
 
@@ -70,10 +70,12 @@ async fn form_one(
 }
 
 async fn memo_form(
+    req: HttpRequest,
     pool: web::Data<r2d2::Pool<ConnectionManager<SqliteConnection>>>,
     params: web::Form<FormParams>,
     tmpl: web::Data<Tera>,
 ) -> Result<HttpResponse, Error> {
+    println!("{:?}", req);
     let new_memo = crate::models::NewMemo {
         content: String::from(&params.content),
         created_at: Local::now().naive_local(),
@@ -153,6 +155,8 @@ async fn delete(
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    env::set_var("RUST_LOG", "actix_web=debug,actix_server=info");
+    env_logger::init();
     let templates = Tera::new("templates/**/*").unwrap();
 
     let database_url = "database.sqlite3";
@@ -161,6 +165,7 @@ async fn main() -> std::io::Result<()> {
         .expect("failed to create db connection pool");
     HttpServer::new(move || {
         App::new()
+            .wrap(middleware::Logger::default())
             .data(templates.clone())
             .data(db_pool.clone())
             .route("/", web::get().to(greet))
@@ -170,7 +175,7 @@ async fn main() -> std::io::Result<()> {
             .service(search)
             .service(delete)
     })
-    .bind("127.0.0.1:8080")?
+    .bind("0.0.0.0:9999")?
     .run()
     .await
 }
