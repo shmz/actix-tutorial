@@ -2,14 +2,16 @@
 extern crate diesel;
 
 use crate::schema::memos;
-use actix_web::{get, post, error, web, App, Error, HttpRequest, HttpResponse, HttpServer, middleware};
+use actix_files as fs;
+use actix_web::http::StatusCode;
+use actix_web::{get, guard, post, error, web, App, Error, HttpRequest, HttpResponse, HttpServer, middleware, Result};
 use diesel::{
     prelude::*,
     r2d2::{self, ConnectionManager},
     sqlite::SqliteConnection,
 };
 use serde::{Deserialize, Serialize};
-use std::{str, env, io};
+use std::{str, env};
 use tera::{Context, Tera};
 use chrono::Local;
 
@@ -153,6 +155,11 @@ async fn delete(
     Ok(HttpResponse::Ok().content_type("text/html").body(view))
 }
 
+/// 404 handler
+async fn p404() -> Result<fs::NamedFile> {
+    Ok(fs::NamedFile::open("templates/404.html")?.set_status_code(StatusCode::NOT_FOUND))
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     env::set_var("RUST_LOG", "actix_web=debug,actix_server=info");
@@ -174,6 +181,18 @@ async fn main() -> std::io::Result<()> {
             .service(form_one)
             .service(search)
             .service(delete)
+            // default
+            .default_service(
+                // 404 for GET request
+                web::resource("")
+                    .route(web::get().to(p404))
+                    // all requests that are not `GET`
+                    .route(
+                        web::route()
+                            .guard(guard::Not(guard::Get()))
+                            .to(HttpResponse::MethodNotAllowed),
+                    ),
+            )
     })
     .bind("0.0.0.0:9999")?
     .run()
