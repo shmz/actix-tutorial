@@ -22,7 +22,8 @@ diesel migration generate create_memos
 CREATE TABLE memos (
   id INTEGER NOT NULL PRIMARY KEY,
   content VARCHAR NOT NULL,
-  created_at TIMESTAMP NOT NULL
+  created_at TIMESTAMP NOT NULL,
+  del INTEGER NOT NULL
 )
 ```
 
