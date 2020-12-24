@@ -19,7 +19,7 @@
         <form class="form-horizontal" id="simpleForm" method="POST" action="/form/memo">
             <div class="form-group">
                 <label for="content">Content</label>
-                <input type="text" name="content" id="content" class="form-control">
+                <textarea name="content" id="content" cols="100" rows="5" class="form-control"></textarea>
             </div>
             <button type="submit" class="btn btn-primary">Post</button>
         </form>
@@ -38,6 +38,7 @@
                     <th scope="col">created_at</th>
                     <th scope="col">content</th>
                     <th scope="col">delete</th>
+                    <th scope="col">edit</th>
                 </tr>
             </thead>
             <tbody>
@@ -47,6 +48,7 @@
                     <td>{{ memo.created_at }}</td>
                     <td>{{ memo.content }}</td>
                     <td><form class="form-horizontal" id="simpleForm" method="POST" action="/delete/{{ memo.id }}"><button type="submit" class="btn btn-primary">Delete</button></form></td>
+                    <td><form class="form-horizontal" id="simpleForm" method="POST" action="/edit/{{ memo.id }}"><button type="submit" class="btn btn-primary">Edit</button></form></td>
                 </tr>
                 {% endfor %}
             </tbody>

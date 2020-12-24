@@ -167,6 +167,69 @@ async fn delete(
     Ok(HttpResponse::Ok().content_type("text/html").body(view))
 }
 
+#[post("/edit/{id}")]
+async fn edit(
+    pool: web::Data<r2d2::Pool<ConnectionManager<SqliteConnection>>>,
+    tmpl: web::Data<Tera>,
+    info: web::Path<(i32,)>,
+) -> Result<HttpResponse, Error> {
+    let info = info.into_inner();//info.0,path.into_inner().0
+    let mut ctx = Context::new();
+    let conn = pool.get().expect("couldn't get db connection from pool");
+/*
+    let target = memos::table.filter(memos::id.eq(info.0));
+    diesel::update(target)
+        .set(memos::del.eq(1))
+        .execute(&conn)
+        .unwrap();
+    */
+    let memos = memos::table
+        .filter(memos::id.eq(info.0))
+        .filter(memos::del.eq(0))
+        .order(memos::created_at.desc())//added
+        .limit(1)
+        .load::<crate::models::Memo>(&conn)
+        .expect("Error loading cards");
+    
+    ctx.insert("memos", &memos);
+    let view = tmpl
+        .render("edit.html", &ctx)
+        .map_err(|e| error::ErrorInternalServerError(e))?;
+    Ok(HttpResponse::Ok().content_type("text/html").body(view))
+}
+
+#[post("/update/{id}")]
+async fn update(
+    pool: web::Data<r2d2::Pool<ConnectionManager<SqliteConnection>>>,
+    params: web::Form<FormParams>,
+    tmpl: web::Data<Tera>,
+    info: web::Path<(i32,)>,
+) -> Result<HttpResponse, Error> {
+    let info = info.into_inner();//info.0,path.into_inner().0
+    let conn = pool.get().expect("couldn't get db connection from pool");
+
+    let target = memos::table.filter(memos::id.eq(info.0));
+    diesel::update(target)
+        .set(memos::content.eq(&params.content))
+        .execute(&conn)
+        .unwrap();
+    
+    let memos = memos::table
+        .filter(memos::del.eq(0))
+        .filter(memos::id.eq(info.0))
+        .order(memos::created_at.desc())//added
+        .limit(1)
+        .load::<crate::models::Memo>(&conn)
+        .expect("Error loading cards");
+
+    let mut ctx = Context::new();
+    ctx.insert("memos", &memos);
+    let view = tmpl
+        .render("form.html", &ctx)
+        .map_err(|e| error::ErrorInternalServerError(e))?;
+    Ok(HttpResponse::Ok().content_type("text/html").body(view))
+}
+
 /// 404 handler
 async fn p404() -> Result<fs::NamedFile> {
     Ok(fs::NamedFile::open("templates/404.html")?.set_status_code(StatusCode::NOT_FOUND))
@@ -194,6 +257,8 @@ async fn main() -> std::io::Result<()> {
             .service(form_one)
             .service(search)
             .service(delete)
+            .service(edit)
+            .service(update)
             // default
             .default_service(
                 // 404 for GET request
