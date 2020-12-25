@@ -17,3 +17,10 @@ pub struct NewMemo {
     pub created_at: NaiveDateTime,
     pub del: i32,
 }
+
+#[derive(Queryable, Serialize)]
+pub struct Pages {
+    pub prev: i32,
+    pub id: i32,
+    pub next: i32,
+}

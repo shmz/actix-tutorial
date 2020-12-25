@@ -61,6 +61,38 @@ async fn form(
     Ok(HttpResponse::Ok().content_type("text/html").body(view))
 }
 
+#[get("/page/{id}")]
+async fn page(
+    pool: web::Data<r2d2::Pool<ConnectionManager<SqliteConnection>>>,
+    tmpl: web::Data<Tera>,
+    info: web::Path<(i32,)>,
+) -> Result<HttpResponse, Error> {
+    let info = info.into_inner();//info.0,path.into_inner().0
+    let mut ctx = Context::new();
+    let conn = pool.get().expect("couldn't get db connection from pool");
+    let offsets = info.0 * 5 - 5;
+
+    let pages = crate::models::Pages {
+        prev: info.0 - 1,
+        id: info.0,
+        next: info.0 + 1,
+    };
+    
+    let memos = memos::table
+        .filter(memos::del.eq(0))
+        .order(memos::created_at.desc())//added
+        .limit(5)
+        .offset(offsets.into())
+        .load::<crate::models::Memo>(&conn)
+        .expect("Error loading cards");
+    ctx.insert("memos", &memos);
+    ctx.insert("pages", &pages);
+    let view = tmpl
+        .render("page.html", &ctx)
+        .map_err(|e| error::ErrorInternalServerError(e))?;
+    Ok(HttpResponse::Ok().content_type("text/html").body(view))
+}
+
 #[get("/memo/{id}")]
 async fn form_one(
     pool: web::Data<r2d2::Pool<ConnectionManager<SqliteConnection>>>,
@@ -259,6 +291,7 @@ async fn main() -> std::io::Result<()> {
             .service(delete)
             .service(edit)
             .service(update)
+            .service(page)
             // default
             .default_service(
                 // 404 for GET request
